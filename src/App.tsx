@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 import './App.css'
 
-const UI_ROOT = 'http://139.162.48.5:7132'
+const UI_ROOT = 'http://localhost:3001'
 const API_ROOT = 'http://139.162.48.5:7131'
 
 type FSType = 'directory' | 'file'
@@ -33,6 +33,35 @@ const isVideo = (stat: FSStat) => {
   return ['mov', 'mp4'].includes(ext)
 }
 
+const PATH_SEP = '/'
+const Breadcrumbs: FC<{ path: string }> = (props) => {
+  const parts = props.path.split(PATH_SEP)
+
+  return (
+    <nav>
+      <ul style={{ display: 'flex', listStyle: 'none' }}>
+        {parts.map((part, i) => {
+          if (i === parts.length - 1) {
+            return (
+              <li key={i}>{part}</li>
+            )
+          }
+
+          const url = `${UI_ROOT}/${btoa(parts.slice(0, i + 1).join(PATH_SEP))}`
+          return (
+            <li key={i}>
+              <a href={url}>
+                <span>{part}</span>
+                <span>{PATH_SEP}</span>
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+    </nav>
+  )
+}
+
 function App () {
   const path = window.location.pathname.substring(1) || btoa('/')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -46,21 +75,12 @@ function App () {
     })
   }, [path])
 
-  const parentPath = fsStat
-    ? `${fsStat.path.split('/').slice(0, -1).join('/')}`
-    : '/'
-
   return (
     <div className="App">
       {fsStat
         ? (
         <div>
-          {fsStat.path !== '/' && (
-            <a href={`${UI_ROOT}/${parentPath === '/' ? '' : btoa(parentPath)}`}>
-              {parentPath || '/'}
-            </a>
-          )}
-          <h4>{fsStat.path}</h4>
+          <Breadcrumbs path={fsStat.path} />
           {fsStat.children && (
             <ul style={{ padding: 0 }}>
               {fsStat.children.map(entry => {
